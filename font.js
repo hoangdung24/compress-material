@@ -26,5 +26,5 @@ fs.readdir(inputPath, async (err, files) => {
     })
   );
 
-  console.log("DONE!");
+  // console.log("DONE!");
 });
