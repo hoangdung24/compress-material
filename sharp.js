@@ -1,96 +1,30 @@
-const fs = require("fs/promises");
-const path = require("path");
-const sharp = require("sharp");
+// const fs = require("fs");
+// const path = require("path");
+// const sharp = require("sharp");
+// const { glob } = require("glob");
 
-const inputPath = path.resolve(__dirname, "images");
-const outputPath = path.resolve(__dirname, "outputs", "images");
+import fs from "fs";
+import fsPromise from "fs/promises";
+import path from "path";
+import sharp from "sharp";
+import { glob } from "glob";
+import * as url from "url";
 
-fs.readdir(inputPath)
-  .then(async (files) => {
-    await Promise.all(
-      files.map((file) => {
-        fs.lstat(file)
-          .then(() => {
-            // if (err) {
-          })
-          .catch(async (err) => {
-            const subFiles = await fs.readdir(path.resolve(inputPath, file));
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
-            return subFiles.map(async (el) => {
-              const fullPath = path.resolve(inputPath, file, el);
+glob("images/**/*.{png,jpg,jpeg}", { ignore: "node_modules/**" }).then(
+  async (results) => {
+    const outputPath = path.resolve(__dirname, "outputs", results[0]);
 
-              const data = await fs.readFile(fullPath);
+    const result = await fsPromise.readFile(results[0]);
 
-              const image = sharp(data);
+    const destStream = fs.createWriteStream(outputPath);
 
-              const metadata = await image.metadata();
-
-              const { format } = metadata;
-
-              if (format === "jpeg" || format === "jpg") {
-                console.log("HERE");
-
-                return image
-                  .jpeg({ mozjpeg: true, quality: 80 })
-                  .write(path.resolve(outputPath, file, el));
-              }
-
-              if (format === "png") {
-                console.log("HERE");
-
-                return image
-                  .png({ quality: 80 })
-                  .write(path.resolve(outputPath, file, el));
-              }
-
-              return Promise.resolve();
-            });
-
-            //   fs.readdir(path.resolve(inputPath, file), (err, files) => {
-            //     if (err) throw err;
-            //     console.log(files);
-            //     return files.map((subFile) => {
-            //       return fs.readFile(() => {});
-            //     });
-            //   });
-            // }
-          });
+    sharp(result)
+      .jpeg({
+        mozjpeg: true,
       })
-    );
-
-    // console.log(files);
-  })
-  .catch(() => {});
-
-// async (err, files) => {
-//   if (err) throw err;
-
-//   await Promise.all(
-//     files.map((file) => {
-//       fs.lstat(file, (err, stats) => {
-//         if (err) {
-//           //* DIR
-
-//           fs.readdir(path.resolve(inputPath, file), (err, files) => {
-//             if (err) throw err;
-//             console.log(files);
-
-//             return files.map((subFile) => {
-//               return fs.readFile(() => {});
-//             });
-//           });
-//         }
-
-//         console.log(stats);
-//       });
-
-//       // fs.readFile(file, (err, data) => {
-//       //   if (err) throw err;
-
-//       //   console.log(data);
-//       // });
-//     })
-//   );
-
-//   // console.log(files);
-// };
+      .pipe(destStream);
+  }
+);
